@@ -1,0 +1,38 @@
+import psutil
+import time
+from datetime import datetime
+
+def monitor_interfaces():
+    print("--- Interface Detection System Started ---")
+    
+    # psutil.net_if_stats() returns a dict: {interface_name: snicstats}
+    last_status = {name: stats.isup for name, stats in psutil.net_if_stats().items()}
+    
+    try:
+        while True:
+            current_interfaces = psutil.net_if_stats()
+            
+            for name, stats in current_interfaces.items():
+                is_up = stats.isup
+                
+                if name not in last_status:
+                    print_alert(name, "DETECTED (New Interface Found)")
+                    last_status[name] = is_up
+                elif is_up != last_status[name]:
+                    status_text = "UP" if is_up else "DOWN"
+                    print_alert(name, f"changed to {status_text}")
+                    
+                    last_status[name] = is_up
+            
+            # Wait for 2 seconds before checking again
+            time.sleep(2)
+            
+    except KeyboardInterrupt:
+        print("\nMonitoring stopped by user.")
+
+def print_alert(interface_name, message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] ALERT: Interface '{interface_name}' {message}")
+
+if __name__ == "__main__":
+    monitor_interfaces()
